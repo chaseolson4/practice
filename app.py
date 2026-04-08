@@ -353,7 +353,7 @@ with tab1:
         st.markdown("<br>", unsafe_allow_html=True)
         run_analysis = st.button("▶  Run Analysis", key="run1")
 
-    if run_analysis or ticker_input:
+    if run_analysis:
 
         with st.spinner(f"Downloading 6 months of data for {ticker_input} from Yahoo Finance…"):
             try:
@@ -362,7 +362,7 @@ with tab1:
                 st.error(f"Could not download data for '{ticker_input}'. Check the ticker and try again.")
                 st.stop()
 
-        if df.empty or len(df) < 55:
+        if df.empty:
             st.error("Not enough data returned. Try a different ticker or check your internet connection.")
             st.stop()
 
