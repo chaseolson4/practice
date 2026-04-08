@@ -37,7 +37,7 @@ st.set_page_config(
 # ============================================================
 st.markdown("""
 <style>
-    /* Import the same fonts used in the template */
+    /* Import a clean, professional font from Google Fonts */
     @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono&display=swap');
 
     /* Apply font to the whole app */
@@ -45,7 +45,7 @@ st.markdown("""
         font-family: 'DM Sans', sans-serif;
     }
 
-    /* ── Metric cards — matches template .metric-card style ── */
+    /* ── Style the big metric number cards ── */
     .metric-card {
         background: #f8fafc;
         border: 1px solid #e2e8f0;
@@ -92,7 +92,7 @@ st.markdown("""
     .badge-hold    { background: #fef9c3; color: #ca8a04; border: 1px solid #fde68a; }
     .badge-neutral { background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; }
 
-    /* ── Tip / insight box — matches template .tip-box ─────── */
+    /* ── Tip / insight box — .tip-box ─────── */
     .tip-box {
         background: #eff6ff;
         border-left: 4px solid #2563eb;
@@ -148,7 +148,7 @@ st.markdown("""
     .styled-table tr:last-child td { border-bottom: none; }
     .styled-table tr:hover td { background: #f8fafc; }
 
-    /* ── Section intro — matches template .section-intro ───── */
+    /* ── Section intro — .section-intro ───── */
     .section-intro {
         font-size: 16px;
         color: #475569;
@@ -156,7 +156,7 @@ st.markdown("""
         line-height: 1.7;
     }
 
-    /* ── Make Streamlit's built-in metric match template ───── */
+    /* ── Make Streamlit's built-in metric ───── */
     [data-testid="stMetric"] {
         background: #f8fafc;
         border: 1px solid #e2e8f0;
@@ -168,7 +168,7 @@ st.markdown("""
 
 
 # ============================================================
-# MATPLOTLIB THEME — light style to match the app
+# MATPLOTLIB THEME 
 # ============================================================
 plt.rcParams.update({
     "figure.facecolor":  "#ffffff",
@@ -922,7 +922,7 @@ with tab2:
 
 
 # ============================================================
-# FOOTER — matches template footer style
+# FOOTER
 # st.divider() draws a horizontal line
 # st.caption() shows small gray text
 # ============================================================
