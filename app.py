@@ -274,7 +274,7 @@ def trend_label(price, ma20, ma50):
     elif price < ma20 < ma50:
         return "Strong Downtrend", "red"
     else:
-        return "Mixed / Sideways", "amber"
+        return "Mixed", "amber"
 
 
 def rsi_signal(rsi_val):
