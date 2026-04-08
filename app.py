@@ -1,247 +1,191 @@
 # ============================================================
-# STOCK ANALYTICS & PORTFOLIO DASHBOARD — Streamlit App
+# STOCK & PORTFOLIO ANALYTICS APP — Streamlit
 # ============================================================
 
-# --- IMPORTS ---
 import streamlit as st
+import yfinance as yf
 import pandas as pd
 import numpy as np
-import yfinance as yf
 import matplotlib.pyplot as plt
-import math
-from datetime import datetime, timedelta
 
 # ============================================================
-# PAGE CONFIGURATION
+# PAGE CONFIG
 # ============================================================
 st.set_page_config(
-    page_title="Stock Analytics & Portfolio Dashboard",
+    page_title="Stock & Portfolio Analytics",
     page_icon="📈",
     layout="wide"
 )
 
 # ============================================================
-# CUSTOM CSS STYLING (matches personal finance example)
+# CUSTOM CSS (for clean look)
 # ============================================================
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono&display=swap');
 html, body, [class*="css"] { font-family: 'DM Sans', sans-serif; }
-.metric-card {background: #f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:1.2rem 1.5rem; text-align:center; margin-bottom:1rem;}
-.metric-label {font-size:13px; color:#64748b; margin-bottom:4px; letter-spacing:0.03em; text-transform:uppercase;}
-.metric-value {font-size:28px; font-weight:600; color:#0f172a; font-family:'DM Mono', monospace;}
-.metric-value.green {color:#16a34a;}
-.metric-value.red {color:#dc2626;}
-.tip-box {background:#eff6ff; border-left:4px solid #2563eb; border-radius:0 8px 8px 0; padding:1rem 1.25rem; margin-top:1rem; font-size:15px; color:#1e3a5f; line-height:1.7;}
+.metric-value { font-family: 'DM Mono', monospace; }
 </style>
 """, unsafe_allow_html=True)
 
 # ============================================================
-# HELPER FUNCTIONS
+# HELPER FUNCTION
 # ============================================================
-
-def format_currency(value):
-    return f"${value:,.2f}"
+def format_currency(val):
+    return f"${val:,.2f}"
 
 def calculate_rsi(series, period=14):
     delta = series.diff()
-    gain = delta.clip(lower=0)
-    loss = -1 * delta.clip(upper=0)
-    avg_gain = gain.rolling(period, min_periods=1).mean()
-    avg_loss = loss.rolling(period, min_periods=1).mean()
-    rs = avg_gain / avg_loss
+    up = delta.clip(lower=0)
+    down = -1 * delta.clip(upper=0)
+    ma_up = up.rolling(period).mean()
+    ma_down = down.rolling(period).mean()
+    rs = ma_up / ma_down
     rsi = 100 - (100 / (1 + rs))
     return rsi
 
-def annualized_volatility(returns):
-    return np.std(returns) * np.sqrt(252)
+def calculate_annual_volatility(series, window=20):
+    returns = series.pct_change()
+    vol = returns.rolling(window).std() * np.sqrt(252)
+    return vol
 
 # ============================================================
-# APP TITLE & NAVIGATION
+# APP TITLE & TABS
 # ============================================================
-st.title("📈 Stock Analytics & Portfolio Dashboard")
-st.markdown("*Analyze individual stocks and multi-asset portfolios with real data from Yahoo Finance.*")
-
-tab1, tab2 = st.tabs([
-    "📊 Individual Stock Analysis",
-    "💹 Portfolio Performance Dashboard"
-])
+st.title("📈 Stock & Portfolio Analytics App")
+tab1, tab2 = st.tabs(["📊 Individual Stock Analysis", "💼 Portfolio Dashboard"])
 
 # ============================================================
-# TAB 1: INDIVIDUAL STOCK ANALYSIS
+# TAB 1: INDIVIDUAL STOCK
 # ============================================================
 with tab1:
-
     st.header("Individual Stock Analysis")
 
-    # --- STOCK INPUT ---
-    ticker = st.text_input("Enter Stock Ticker:", value="AAPL").upper()
+    # --- Inputs ---
+    ticker = st.text_input("Enter stock ticker", value="AAPL").upper()
+    start_date = st.date_input("Start date", pd.to_datetime("today") - pd.Timedelta(days=180))
+    end_date = st.date_input("End date", pd.to_datetime("today"))
 
-    end_date = datetime.today()
-    start_date = end_date - timedelta(days=180)  # last 6 months
-
-    # --- DATA DOWNLOAD ---
+    # --- Download data ---
     df = yf.download(ticker, start=start_date, end=end_date)
 
-    if df.empty:
-        st.error("Ticker not found. Try a valid stock symbol.")
+    if df.empty or 'Close' not in df.columns:
+        st.error(f"No price data found for {ticker}. Check ticker or date range.")
     else:
         close = df['Close']
+        current_price = close.iloc[-1]
 
-        # --- TREND ANALYSIS ---
-        ma20 = close.rolling(20).mean()
-        ma50 = close.rolling(50).mean()
-        current_price = close[-1]
+        # --- Moving averages ---
+        ma20 = close.rolling(20).mean().iloc[-1]
+        ma50 = close.rolling(50).mean().iloc[-1]
 
-        if current_price > ma20[-1] > ma50[-1]:
+        # --- Trend ---
+        if current_price > ma20 > ma50:
             trend = "Strong Uptrend"
-            trend_color = "green"
-        elif current_price < ma20[-1] < ma50[-1]:
+        elif current_price < ma20 < ma50:
             trend = "Strong Downtrend"
-            trend_color = "red"
         else:
             trend = "Mixed Trend"
-            trend_color = "black"
 
-        # --- RSI ANALYSIS ---
-        rsi = calculate_rsi(close)
-        current_rsi = rsi[-1]
-        if current_rsi > 70:
-            momentum = "Overbought (Sell Signal)"
-            rsi_color = "red"
-        elif current_rsi < 30:
-            momentum = "Oversold (Buy Signal)"
-            rsi_color = "green"
+        # --- RSI ---
+        rsi_series = calculate_rsi(close)
+        rsi = rsi_series.iloc[-1]
+        if rsi > 70:
+            rsi_signal = "Overbought (Sell)"
+        elif rsi < 30:
+            rsi_signal = "Oversold (Buy)"
         else:
-            momentum = "Neutral"
-            rsi_color = "black"
+            rsi_signal = "Neutral"
 
-        # --- VOLATILITY ---
-        returns = close.pct_change().dropna()
-        vol = annualized_volatility(returns)
-        if vol > 0.40:
+        # --- Volatility ---
+        vol = calculate_annual_volatility(close).iloc[-1] * 100
+        if vol > 40:
             vol_label = "High"
-        elif vol > 0.25:
+        elif vol >= 25:
             vol_label = "Medium"
         else:
             vol_label = "Low"
 
-        # --- TRADING RECOMMENDATION ---
-        if trend == "Strong Uptrend" and momentum == "Neutral":
+        # --- Recommendation ---
+        if trend == "Strong Uptrend" and rsi_signal == "Oversold (Buy)":
             recommendation = "Buy"
-        elif trend == "Strong Downtrend" or momentum == "Overbought (Sell Signal)":
+        elif trend == "Strong Downtrend" or rsi_signal == "Overbought (Sell)":
             recommendation = "Sell"
         else:
             recommendation = "Hold"
 
-        # --- DISPLAY METRICS ---
-        col1, col2, col3, col4 = st.columns(4)
-        with col1: st.metric("Current Price", format_currency(current_price))
-        with col2: st.metric("Trend", trend, "", delta_color=trend_color)
-        with col3: st.metric("RSI", f"{current_rsi:.1f}", momentum)
-        with col4: st.metric("Volatility", f"{vol*100:.1f}%", vol_label)
+        # --- Display metrics ---
+        st.subheader(f"Latest analysis for {ticker}")
+        col1, col2, col3, col4, col5 = st.columns(5)
+        col1.metric("Current Price", format_currency(current_price))
+        col2.metric("20-Day MA", format_currency(ma20))
+        col3.metric("50-Day MA", format_currency(ma50))
+        col4.metric("RSI", f"{rsi:.1f}", rsi_signal)
+        col5.metric("Volatility", f"{vol:.1f}%", vol_label)
 
-        st.markdown(f"<div class='tip-box'><strong>Trading Recommendation:</strong> {recommendation}</div>", unsafe_allow_html=True)
+        st.markdown(f"**Trend:** {trend}  |  **Recommendation:** {recommendation}")
 
-        # --- PLOT PRICE & MOVING AVERAGES ---
-        fig, ax = plt.subplots(figsize=(10,4))
-        ax.plot(close.index, close, label="Close Price")
-        ax.plot(ma20.index, ma20, label="20-Day MA")
-        ax.plot(ma50.index, ma50, label="50-Day MA")
-        ax.set_title(f"{ticker} Price & Moving Averages (6 Months)")
-        ax.set_ylabel("Price ($)")
+        # --- Chart ---
+        fig, ax = plt.subplots(figsize=(10, 4))
+        ax.plot(close.index, close, label="Close")
+        ax.plot(close.index, close.rolling(20).mean(), label="20-day MA")
+        ax.plot(close.index, close.rolling(50).mean(), label="50-day MA")
+        ax.set_title(f"{ticker} Price & Moving Averages")
+        ax.set_ylabel("Price")
         ax.legend()
-        ax.grid(True)
         st.pyplot(fig)
 
 # ============================================================
-# TAB 2: PORTFOLIO PERFORMANCE DASHBOARD
+# TAB 2: PORTFOLIO
 # ============================================================
 with tab2:
-
     st.header("Portfolio Performance Dashboard")
 
-    # --- DEFAULT PORTFOLIO ---
-    default_portfolio = {
-        "AAPL": 0.2,
-        "MSFT": 0.2,
-        "GOOGL": 0.2,
-        "AMZN": 0.2,
-        "META": 0.2
-    }
+    # --- Inputs ---
+    default_stocks = ["AAPL", "MSFT", "GOOGL", "AMZN", "TSLA"]
+    tickers = st.text_area("Enter 5 tickers (comma-separated)", value=",".join(default_stocks))
+    tickers = [t.strip().upper() for t in tickers.split(",") if t.strip()]
+    weights = st.text_area("Enter 5 weights (sum=1.0, comma-separated)", value="0.2,0.2,0.2,0.2,0.2")
+    weights = [float(w) for w in weights.split(",")]
 
-    st.subheader("Portfolio Tickers & Weights")
-    tickers = []
-    weights = []
+    benchmark = st.text_input("Benchmark ticker", value="^GSPC").upper()
+    start_date_pf = st.date_input("Start date (portfolio)", pd.to_datetime("today") - pd.Timedelta(days=365))
+    end_date_pf = st.date_input("End date (portfolio)", pd.to_datetime("today"))
 
-    cols = st.columns(len(default_portfolio))
-    for i, (stock, w) in enumerate(default_portfolio.items()):
-        tickers.append(cols[i].text_input(f"Ticker {i+1}", value=stock).upper())
-        weights.append(cols[i].number_input(f"Weight {i+1}", min_value=0.0, max_value=1.0, value=w, step=0.05))
-
-    # Normalize weights if not sum to 1
-    total_weight = sum(weights)
-    if total_weight != 1.0:
-        weights = [w/total_weight for w in weights]
-
-    benchmark_ticker = st.text_input("Benchmark Ticker", value="^GSPC").upper()
-
-    # --- DATA DOWNLOAD ---
-    start_date_portfolio = datetime.today() - timedelta(days=365)
-    all_tickers = tickers + [benchmark_ticker]
-    df_port = yf.download(all_tickers, start=start_date_portfolio)['Close']
-
-    if df_port.empty:
-        st.error("Error fetching portfolio data.")
+    if len(tickers) != 5 or len(weights) != 5 or abs(sum(weights) - 1.0) > 0.001:
+        st.error("Enter exactly 5 tickers and weights that sum to 1.0")
     else:
-        # --- CALCULATE RETURNS ---
-        returns = df_port[tickers].pct_change().dropna()
-        portfolio_returns = (returns * weights).sum(axis=1)
-        benchmark_returns = df_port[benchmark_ticker].pct_change().dropna()
+        # --- Download portfolio & benchmark data ---
+        df_pf = yf.download(tickers + [benchmark], start=start_date_pf, end=end_date_pf)['Close']
 
-        # --- PERFORMANCE METRICS ---
-        total_return = (1 + portfolio_returns).prod() - 1
-        benchmark_return = (1 + benchmark_returns).prod() - 1
-        vol_port = annualized_volatility(portfolio_returns)
-        vol_bench = annualized_volatility(benchmark_returns)
-        sharpe_ratio = (portfolio_returns.mean()/portfolio_returns.std())*np.sqrt(252)
-        outperformance = total_return - benchmark_return
+        if df_pf.empty:
+            st.error("No data found for portfolio tickers / benchmark.")
+        else:
+            # Portfolio returns
+            returns = df_pf[tickers].pct_change().dropna()
+            portfolio_returns = (returns * weights).sum(axis=1)
+            benchmark_returns = df_pf[benchmark].pct_change().dropna()
 
-        # --- DISPLAY METRICS ---
-        c1, c2, c3, c4, c5 = st.columns(5)
-        c1.metric("Portfolio Return", f"{total_return*100:.2f}%")
-        c2.metric("Benchmark Return", f"{benchmark_return*100:.2f}%")
-        c3.metric("Outperformance", f"{outperformance*100:.2f}%")
-        c4.metric("Portfolio Volatility", f"{vol_port*100:.2f}%")
-        c5.metric("Sharpe Ratio", f"{sharpe_ratio:.2f}")
+            # Performance metrics
+            total_return = (1 + portfolio_returns).prod() - 1
+            benchmark_return = (1 + benchmark_returns).prod() - 1
+            vol_pf = portfolio_returns.std() * np.sqrt(252)
+            sharpe_ratio = (portfolio_returns.mean() * 252) / (portfolio_returns.std() * np.sqrt(252))
 
-        # --- PLOT CUMULATIVE RETURNS ---
-        cumulative_port = (1 + portfolio_returns).cumprod()
-        cumulative_bench = (1 + benchmark_returns).cumprod()
-        fig2, ax2 = plt.subplots(figsize=(10,4))
-        ax2.plot(cumulative_port.index, cumulative_port, label="Portfolio")
-        ax2.plot(cumulative_bench.index, cumulative_bench, label=benchmark_ticker)
-        ax2.set_title("Cumulative Returns (1 Year)")
-        ax2.set_ylabel("Cumulative Return ($1 invested)")
-        ax2.legend()
-        ax2.grid(True)
-        st.pyplot(fig2)
+            st.subheader("Portfolio Metrics")
+            col1, col2, col3, col4 = st.columns(4)
+            col1.metric("Portfolio Total Return", f"{total_return*100:.1f}%")
+            col2.metric(f"{benchmark} Return", f"{benchmark_return*100:.1f}%")
+            col3.metric("Annual Volatility", f"{vol_pf*100:.1f}%")
+            col4.metric("Sharpe Ratio", f"{sharpe_ratio:.2f}")
 
-        # --- INTERPRETATION ---
-        st.markdown(f"""
-        <div class='tip-box'>
-        <strong>Portfolio Insights:</strong><br><br>
-        Your portfolio returned <strong>{total_return*100:.2f}%</strong> over the past year.<br>
-        Benchmark ({benchmark_ticker}) returned <strong>{benchmark_return*100:.2f}%</strong>.<br>
-        Outperformance: <strong>{outperformance*100:.2f}%</strong>.<br>
-        Portfolio volatility: <strong>{vol_port*100:.2f}%</strong> (Benchmark: {vol_bench*100:.2f}%)<br>
-        Sharpe Ratio: <strong>{sharpe_ratio:.2f}</strong> — measures risk-adjusted efficiency.<br><br>
-        { "Your portfolio outperformed the benchmark!" if outperformance > 0 else "Your portfolio underperformed the benchmark." }
-        </div>
-        """, unsafe_allow_html=True)
-
-# ============================================================
-# FOOTER
-# ============================================================
-st.divider()
-st.caption("Built with Python, Streamlit & yfinance · For educational purposes")
+            # Comparison plot
+            cum_pf = (1 + portfolio_returns).cumprod()
+            cum_bench = (1 + benchmark_returns).cumprod()
+            fig2, ax2 = plt.subplots(figsize=(10, 4))
+            ax2.plot(cum_pf.index, cum_pf, label="Portfolio")
+            ax2.plot(cum_bench.index, cum_bench, label=benchmark)
+            ax2.set_title("Portfolio vs Benchmark Cumulative Returns")
+            ax2.set_ylabel("Growth of $1")
+            ax2.legend()
+            st.pyplot(fig2)
