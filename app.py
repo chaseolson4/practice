@@ -919,23 +919,6 @@ with tab2:
         </div>
         """, unsafe_allow_html=True)
 
-        # ── Rolling correlation chart ─────────────────────────
-        with st.expander("📊  Rolling 30-Day Correlation: Portfolio vs Benchmark"):
-            rolling_corr = port_rets.rolling(30).corr(bench_rets).dropna()
-            fig5, ax5 = plt.subplots(figsize=(12, 3))
-            ax5.plot(rolling_corr.index, rolling_corr, color="#f59e0b", lw=1.5)
-            ax5.axhline(0.7, color="#ef4444", lw=0.8, linestyle="--", label="0.70 threshold")
-            ax5.set_ylim(-1, 1)
-            ax5.set_title("30-Day Rolling Correlation — Portfolio vs Benchmark", fontsize=10, pad=8, color="#94a3b8")
-            ax5.set_ylabel("Correlation", fontsize=9)
-            ax5.legend(framealpha=0.2, facecolor="#0f1923", edgecolor="#1e3a4a", fontsize=9)
-            ax5.grid(True)
-            fig5.tight_layout()
-            st.pyplot(fig5)
-            plt.close(fig5)
-            st.caption("High correlation (>0.70) means the portfolio moves closely with the benchmark — "
-                       "diversification benefit is limited when correlation is high.")
-
 # ── Footer ───────────────────────────────────────────────────
 st.markdown("<hr class='styled-divider'>", unsafe_allow_html=True)
 st.markdown("""
