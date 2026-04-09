@@ -374,7 +374,7 @@ with tab1:
         st.markdown("<br>", unsafe_allow_html=True)
         run_analysis = st.button("Run Analysis", key="run1")
 
-    if run_analysis:
+    if run_analysis or ticker_input:
 
         with st.spinner(f"Fetching 6 months of data for {ticker_input}…"):
             try:
