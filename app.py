@@ -623,7 +623,7 @@ with tab2:
 
     DEFAULT_TICKERS  = ["AAPL", "MSFT", "GOOGL", "AMZN", "NVDA"]
     DEFAULT_WEIGHTS  = [0.25,    0.25,   0.20,    0.15,   0.15]
-    DEFAULT_BENCH    = "^GSPC"
+    DEFAULT_BENCH    = "SPY"
 
     port_cols = st.columns(5)
     tickers, weights = [], []
