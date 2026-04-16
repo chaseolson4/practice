@@ -397,8 +397,6 @@ with tab1:
         # ── STEP 2: Moving averages ──────────────────────────
         ma20 = float(close.rolling(20).mean().iloc[-1])
         ma50 = float(close.rolling(50).mean().iloc[-1])
-        st.write(f"Price: {current_price}, MA20: {ma20}, MA50: {ma50}")
-        st.write(f"price > ma20: {current_price > ma20}, ma20 > ma50: {ma20 > ma50}")
         trend_text, trend_col = trend_label(current_price, ma20, ma50)
 
         # ── STEP 3: RSI ──────────────────────────────────────
