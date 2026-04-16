@@ -268,10 +268,9 @@ def compute_rsi(series: pd.Series, window: int = 14) -> pd.Series:
 
 
 def trend_label(price, ma20, ma50):
-    """Classify price trend based on MA crossover."""
-    if price > ma20 > ma50:
+    if price > ma20 and price > ma50:
         return "Strong Uptrend", "green"
-    elif price < ma20 < ma50:
+    elif price < ma20 and price < ma50:
         return "Strong Downtrend", "red"
     else:
         return "Mixed", "amber"
