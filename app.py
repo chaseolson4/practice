@@ -387,7 +387,7 @@ with tab1:
             st.error("Not enough data returned. Try a different ticker or check your internet connection.")
             st.stop()
 
-        close = df["Close"]
+        close = df["Close"].squeeze()
 
         # ── STEP 1: Basic price info ─────────────────────────
         current_price = float(close.iloc[-1])
